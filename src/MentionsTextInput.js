@@ -29,7 +29,7 @@ export default class MentionsTextInput extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (!nextProps.value) {
+    if (!nextProps.textValue) {
       this.resetTextbox();
     } else if (this.isTrackingStarted && !nextProps.horizontal && nextProps.suggestionsData.length !== 0) {
       const numOfRows = nextProps.MaxVisibleRowCount >= nextProps.suggestionsData.length ? nextProps.suggestionsData.length : nextProps.MaxVisibleRowCount;
@@ -75,6 +75,7 @@ export default class MentionsTextInput extends Component {
   identifyKeyword(val) {
     if (this.isTrackingStarted) {
       const boundary = this.props.triggerLocation === 'new-word-only' ? 'B' : '';
+
       const pattern = new RegExp(`\\${boundary}${this.props.trigger}[a-z0-9_-]+|\\${boundary}${this.props.trigger}`, `gi`);
       const keywordArray = val.match(pattern);
       if (keywordArray && !!keywordArray.length) {
@@ -87,6 +88,7 @@ export default class MentionsTextInput extends Component {
   onChangeText(val) {
     this.props.onChangeText(val); // pass changed text back
     const lastChar = val.substr(val.length - 1);
+
     const wordBoundry = (this.props.triggerLocation === 'new-word-only') ? this.previousChar.trim().length === 0 : true;
     if (lastChar === this.props.trigger && wordBoundry) {
       this.startTracking();
@@ -104,6 +106,21 @@ export default class MentionsTextInput extends Component {
   }
 
   render() {
+  
+    let inputText = this.props.textValue;
+    if(inputText){
+      const boundary = this.props.triggerLocation === 'new-word-only' ? 'B' : '';
+
+      const pattern = new RegExp(`\\${boundary}${this.props.trigger}[a-z0-9_-]+|\\${boundary}${this.props.trigger}`, `gi`);
+      
+      inputText = inputText.split(/(\s)/g).map((item, i) => {
+        if(pattern.test(item)){
+          return <Text key={i} style={{ color: this.props.parseHighlight }}>{item}</Text>;
+        }
+        return item;
+      });
+    }
+
     return (
       <View>
         <Animated.View style={[{ ...this.props.suggestionsPanelStyle }, { height: this.state.suggestionRowHeight }]}>
@@ -127,10 +144,11 @@ export default class MentionsTextInput extends Component {
           ref={component => this._textInput = component}
           onChangeText={this.onChangeText.bind(this)}
           multiline={true}
-          value={this.props.value}
           style={[{ ...this.props.textInputStyle }, { height: Math.min(this.props.textInputMaxHeight, this.state.textInputHeight) }]}
           placeholder={this.props.placeholder ? this.props.placeholder : 'Write a comment...'}
-        />
+        >
+        {inputText}
+        </TextInput>
       </View>
     )
   }
@@ -147,7 +165,8 @@ MentionsTextInput.propTypes = {
   textInputMaxHeight: PropTypes.number,
   trigger: PropTypes.string.isRequired,
   triggerLocation: PropTypes.oneOf(['new-word-only', 'anywhere']).isRequired,
-  value: PropTypes.string.isRequired,
+  textValue: PropTypes.string.isRequired,
+  parseHighlight: PropTypes.string,
   onChangeText: PropTypes.func.isRequired,
   triggerCallback: PropTypes.func.isRequired,
   renderSuggestionsRow: PropTypes.oneOfType([
